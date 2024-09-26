@@ -1,6 +1,29 @@
-version: '3.8'
+version: '3.9'
 
 services:
+  insurance_db_server:
+    image: mysql:8.0
+    build:
+      context: ./docker/insurance_db_server
+      dockerfile: Dockerfile
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    container_name: insurance_db_server
+    environment:
+      MYSQL_ROOT_PASSWORD: secure_password
+      MYSQL_DATABASE: insurance_db
+      MYSQL_USER: insurance_db_user
+      MYSQL_PASSWORD: insurance_db_password
+    ports:
+      - "3306:3306"
+    expose:
+      - "3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./docker/insurance_db_server/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - project-network
+    
   mockserver:
     image: mockserver/mockserver:latest
     ports:
@@ -12,24 +35,8 @@ services:
       MOCKSERVER_INITIALIZATION_JSON_PATH: /config/initializer.json
     volumes:
       - ./docker/catalog-service/config:/config
-
-  insurance_db_server:
-    image: mysql:8.0
-    build:
-      context: ./docker/insurance_db_server
-      dockerfile: Dockerfile
-    command: --default-authentication-plugin=mysql_native_password
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: secure_password
-      MYSQL_DATABASE: insurance_quote_db
-      MYSQL_USER: insurance_db_user
-      MYSQL_PASSWORD: insurance_db_password
-    ports:
-      - "3306:3306"
-    volumes:
-      - db_data:/var/lib/mysql
-      - ./docker/insurance_db_server/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - project-network
 
   zookeeper:
     image: wurstmeister/zookeeper
@@ -37,7 +44,7 @@ services:
     ports:
       - "2181:2181"
     networks:
-      - kafka-net
+     - project-network
 
   kafka:
     image: wurstmeister/kafka
@@ -52,12 +59,25 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_CREATE_TOPICS: "insurance-quote-received:1:1,insurance-policy-created:1:1"
     networks:
-      - kafka-net
+     - project-network
+
+  insurance_quote:
+    build:
+      context: ./docker/insurance-quote
+      dockerfile: Dockerfile
+    environment:
+      DATASOURCE_URL: jdbc:mysql://insurance_db_server:3306/insurance_db?allowPublicKeyRetrieval=true&useSSL=false
+      DATASOURCE_USERNAME: insurance_db_user
+      DATASOURCE_PASSWORD: insurance_db_password
+    ports:
+      - "9000:9000"
+    volumes:
+      - ./docker/insurance-quote:/opt/insurance-quote
+    networks:
+     - project-network
 
 networks:
-  kafka-net:
-    driver: bridge
-
+  project-network:
 
 volumes:
   db_data:

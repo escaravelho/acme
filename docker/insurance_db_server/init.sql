@@ -6,8 +6,8 @@ FLUSH PRIVILEGES;
 USE insurance_db;
 
 CREATE TABLE IF NOT EXISTS customer (
-    id BIGINT PRIMARY KEY,
-    document_number INT,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    document_number BIGINT,
     username VARCHAR(250) NOT NULL,
     user_type VARCHAR(10) NOT NULL,
     gender VARCHAR(10) NOT NULL,
@@ -19,12 +19,12 @@ CREATE TABLE IF NOT EXISTS customer (
 CREATE TABLE IF NOT EXISTS assistances (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     assistances JSON
-)
+);
 
 CREATE TABLE IF NOT EXISTS coverages (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     coverages JSON
-)
+);
 
 CREATE TABLE IF NOT EXISTS insurance (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -32,8 +32,12 @@ CREATE TABLE IF NOT EXISTS insurance (
     category VARCHAR(100) NOT NULL,
     product_id VARCHAR(150) NOT NULL,
     offer_id VARCHAR(150) NOT NULL,
-    FOREIGN KEY (customer_document) REFERENCES customer(document_number),
+    customer_document BIGINT,
+    assistances_id BIGINT, 
+    coverages_id BIGINT,
+    FOREIGN KEY (customer_document) REFERENCES customer(id),
     FOREIGN KEY (assistances_id) REFERENCES assistances(id),
-)
+    FOREIGN KEY (coverages_id) REFERENCES coverages(id)
+);
 
 commit;
